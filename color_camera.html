@@ -9,8 +9,8 @@
 
     <style>
         video, canvas {
-            margin-left: 100px;
-            margin-top: 35px;
+            margin-left: 0px;
+            margin-top: 0px;
             position: absolute;
         }
     </style>
@@ -46,22 +46,42 @@
             return false;
         });
 
-        var tracker = new tracking.ColorTracker(["yellow", "green", "blue"]);
-        // var tracker = new tracking.ColorTracker(["blue"]);
+        tracking.ColorTracker.registerColor('white', function (r, g, b) {
+            if (r > 240 && g > 240 && b > 240) {
+                return true;
+            }
+            return false;
+        });
 
+        tracking.ColorTracker.registerColor('grey', function (r, g, b) {
+            if (r > 200 && g > 200 && b > 200) {
+                return true;
+            }
+            return false;
+        });
+
+        var tracker = new tracking.ColorTracker(["yellow"]);
+
+        var oldDistance = 1000;
 
         tracking.track('#video', tracker, {camera: true});
 
         tracker.on('track', function (event) {
             context.clearRect(0, 0, canvas.width, canvas.height);
 
+            var targetx = 600;
+            var targety = 600;
+
+
             event.data.forEach(function (rect) {
+
+                var koordinateX = rect.x + rect.width / 2;
+                var koordinateY = rect.y + rect.height / 2;
+
                 if (rect.color === 'custom') {
                     rect.color = tracker.customColor;
                 }
 
-                var koordinateX = rect.x + rect.width / 2;
-                var koordinateY = rect.y + rect.height / 2;
 
                 context.strokeStyle = rect.color;
                 context.strokeRect(rect.x, rect.y, rect.width, rect.height);
@@ -72,8 +92,22 @@
 
                 middle.fillRect(koordinateX, koordinateY, 10, 10);
 
-                sendGetRequest("http://141.75.33.246:8888/" + "X=" + koordinateX + ".....Y=" + koordinateY);
+                var dx = targetx - koordinateX;
+                var dy = targety - koordinateY;
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                i = 0;
 
+                if (distance > 50) {
+                    if (distance < oldDistance) {
+                        console.log("forward");
+                        sendGetRequest("http://141.75.33.246:8888/" + "forward");
+                    }
+                    else {
+                        console.log("rotate");
+                        sendGetRequest("http://141.75.33.246:8888/" + "rotate");
+                    }
+                    oldDistance = (4 * oldDistance + distance) / 5;
+                }
             });
         });
     };
